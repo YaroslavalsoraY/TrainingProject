@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
 
+	ssogrpc "github.com/YaroslavalsoraY/TrainingProject/internal/clients/sso/grpc"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/config"
+	"github.com/YaroslavalsoraY/TrainingProject/internal/http-server/handlers/url/delete"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/http-server/handlers/url/redirect"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/http-server/handlers/url/save"
-	"github.com/YaroslavalsoraY/TrainingProject/internal/http-server/handlers/url/delete"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/http-server/middleware/logger"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/lib/logger/handlers/slogpretty"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/lib/logger/sl"
@@ -31,11 +33,21 @@ func main() {
 	log.Info("starting url-shortener", slog.String("env", cfg.Env))
 	log.Debug("debug messages are enabled")
 
+	ssoClient, err := ssogrpc.New(
+		context.Background(),
+		log,
+		cfg.Clients.SSO.Adress,
+		cfg.Clients.SSO.Timeout,
+		cfg.Clients.SSO.RetriesCount,
+	)
+
 	storage, err := sqlite.New(cfg.StoragePath)
 	if err != nil {
 		log.Error("failed to init storage", sl.Err(err))
 		os.Exit(1)
 	}
+
+	ssoClient.IsAdmin(context.Background(), 1)
 
 	router := chi.NewRouter()
 
