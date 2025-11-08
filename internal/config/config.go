@@ -14,7 +14,7 @@ type Config struct {
 	StoragePath string `yaml:"storage_path" env-required:"true"`
 	HTTPServer `yaml:"http_server"`
 	Clients ClientsConfig `yaml:"clients"`
-	AppSecret string `yaml:"app_secret" env-required:"true" env:"APP_SECRET"`
+	//AppSecret string `yaml:"app_secret" env-required:"true" env:"APP_SECRET"`
 }
 
 type HTTPServer struct {
@@ -36,7 +36,7 @@ type ClientsConfig struct {
 }
 
 func MustLoad() *Config {
-	err := godotenv.Load(".env")
+	err := godotenv.Load("../../.env")
 	if err != nil {
 		log.Fatal(err)
 	}
