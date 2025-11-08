@@ -5,8 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
-	ssogrpc "github.com/YaroslavalsoraY/TrainingProject/internal/clients/sso/grpc"
+	//ssogrpc "github.com/YaroslavalsoraY/TrainingProject/internal/clients/sso/grpc"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/config"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/http-server/handlers/url/delete"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/http-server/handlers/url/redirect"
@@ -14,6 +15,7 @@ import (
 	"github.com/YaroslavalsoraY/TrainingProject/internal/http-server/middleware/logger"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/lib/logger/handlers/slogpretty"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/lib/logger/sl"
+	eventsender "github.com/YaroslavalsoraY/TrainingProject/internal/services/event-sender"
 	"github.com/YaroslavalsoraY/TrainingProject/internal/storage/sqlite"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -33,13 +35,13 @@ func main() {
 	log.Info("starting url-shortener", slog.String("env", cfg.Env))
 	log.Debug("debug messages are enabled")
 
-	ssoClient, err := ssogrpc.New(
-		context.Background(),
-		log,
-		cfg.Clients.SSO.Adress,
-		cfg.Clients.SSO.Timeout,
-		cfg.Clients.SSO.RetriesCount,
-	)
+	// ssoClient, err := ssogrpc.New(
+	// 	context.Background(),
+	// 	log,
+	// 	cfg.Clients.SSO.Adress,
+	// 	cfg.Clients.SSO.Timeout,
+	// 	cfg.Clients.SSO.RetriesCount,
+	// )
 
 	storage, err := sqlite.New(cfg.StoragePath)
 	if err != nil {
@@ -47,7 +49,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ssoClient.IsAdmin(context.Background(), 1)
+	// ssoClient.IsAdmin(context.Background(), 1)
 
 	router := chi.NewRouter()
 
@@ -78,6 +80,9 @@ func main() {
 		IdleTimeout: cfg.HTTPServer.IdleTimeout,
 	}
 	
+	sender := eventsender.New(storage, log)
+	sender.StartProcessingEvents(context.Background(), 5 * time.Second)
+
 	if err := srv.ListenAndServe(); err != nil {
 		log.Error("failed to start server")
 	}
